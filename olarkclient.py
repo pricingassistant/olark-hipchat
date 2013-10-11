@@ -8,8 +8,8 @@ class Olark(sleekxmpp.ClientXMPP):
 		sleekxmpp.ClientXMPP.__init__(self, username, password)
 		self.hipchat_client = hipchat_client
 		self.hipchat_room = hipchat_room
-		self.add_handler("session_start", self.operator_is_here)
-		#self.add_handler("message", self.visitor_send_message)
+		self.add_event_handler("session_start", self.operator_is_here)
+		self.add_event_handler("message", self.visitor_send_message)
 
 	def operator_is_here(self, event):
 		"""
