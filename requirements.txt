@@ -1,0 +1,2 @@
+sleekxmpp==1.1.11
+python-simple-hipchat == 0.1

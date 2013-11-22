@@ -1,6 +1,0 @@
-# -*- coding: utf-8 -*-
-HIPCHAT_TOKEN=""
-HIPCHAT_ROOMNAME=""
-
-OLARK_USERNAME=''
-OLARK_PASSWORD=''
