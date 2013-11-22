@@ -23,11 +23,12 @@ class Olark(sleekxmpp.ClientXMPP):
 
     def visitor_send_message(self, message):
         print "sent message"
-        msg = str(message['body'])
+        msg = "{} -> <a href='https://chat.olark.com'>chat.olark.com</a>".format(message['body'])
         username = str(message['from']).split(".")[0]
         self.hipchat_client.method('rooms/message', 
             method='POST', 
             parameters={
                 'room_id': self.hipchat_room, 
                 'from': username, 
-                'message': msg})
+                'message': msg,
+                'notify': 1})
