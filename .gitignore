@@ -3,3 +3,4 @@ olark-hipchat.sublime-project
 olark-hipchat.sublime-workspace
 *.pyc
 src/*.pyc
+olark.html
