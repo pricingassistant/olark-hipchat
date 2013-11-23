@@ -1,26 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-import hipchat
 import config
+import hipchat
+import logging
+import Queue
+import signal
+import time
+
 from olarkclient import Olark
 from hipchatclient import HipChat
 from threading import Thread
-import time
-import signal, os
+
+
+logging.basicConfig(level=logging.ERROR)
+
 
 class OlarkHipchat(Thread):
 
-    def __init__(self, sleep_delay):
+    def __init__(self, sleep_delay, hipchat_client, olark_client):
         super(OlarkHipchat, self).__init__()
         self.sleep_delay = sleep_delay
         self.running = True
+        self.hipchat_client = hipchat_client
+        self.olark_client = olark_client
 
     def run(self):
-        # create clients for Olark and HipChat
-        self.hipchat_client = HipChat(config.HIPCHAT_TOKEN, config.HIPCHAT_ROOMNAME)
-        self.olark_client = Olark(config.OLARK_USERNAME, config.OLARK_PASSWORD, self.hipchat_client, config.HIPCHAT_ROOMNAME)
-
         while self.running:
             # monitor if there is a participant in the HipChat room
             participants = self.hipchat_client.get_participants()
@@ -32,7 +36,7 @@ class OlarkHipchat(Thread):
                 # connect it
                 if self.olark_client.connect(("olark.com", 5222)):
                     self.olark_client.process()
-
+            
             # if no participant, disconnect olark client
             elif not participants and olark_state == "connected":
                 self.olark_client.disconnect()
@@ -42,17 +46,24 @@ class OlarkHipchat(Thread):
 
     def stop(self):
         self.running = False
-        self.olark_client.abort()
-
-
 
 if __name__ == '__main__':
-    client = OlarkHipchat(config.HIPCHAT_SLEEPDELAY)
+    # create the queue
+    queue = Queue.Queue(maxsize=0)
+
+    # create clients for Olark and HipChat
+    hipchat_client = HipChat(queue, config.HIPCHAT_TOKEN, config.HIPCHAT_ROOMNAME)
+    hipchat_client.start()
+    olark_client = Olark(queue, config.OLARK_USERNAME, config.OLARK_PASSWORD, config.HIPCHAT_ROOMNAME)
+
+    # create the watch dog
+    client = OlarkHipchat(config.HIPCHAT_SLEEPDELAY, hipchat_client, olark_client)
     client.start()
 
+    # CTRL + C -> quit the application
     def handler(signum, frame):
-        print 'Signal handler called with signal', signum
         client.stop()
-
+        olark_client.abort()
+        hipchat_client.stop()
     signal.signal(signal.SIGINT, handler)
     signal.pause()
