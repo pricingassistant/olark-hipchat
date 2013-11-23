@@ -19,7 +19,6 @@ Broadcast presence on HipChat to Olark, receive messages from Olark on HipChat
 
 	$ git clone https://github.com/pricingassistant/olark-hipchat.git
 	$ cd olark-hipchat
-	$ git checkout dev
 	$ pip install -r requirements.txt
 
 
