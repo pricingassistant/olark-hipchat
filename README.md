@@ -28,8 +28,11 @@ Copy src/config-example.py to src/config.py
 	$ cp src/config-example.py src/config.py
 
 Create your HipChat API Token (https://hipchat.com/admin/api) with an admin type
+
 Set it in src/config.py (HIPCHAT_TOKEN)
+
 Change the room name where to send Olark messages (HIPCHAT_ROOMNAME)
+
 Change the Olark username and password (OLARK_USERNAME, OLARK_PASSWORD)
 
 
