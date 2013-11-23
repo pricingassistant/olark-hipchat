@@ -1,5 +1,7 @@
 # Olark - Hipchat
 
+Broadcast presence on HipChat to Olark, receive messages from Olark on HipChat
+
 
 ## Features
 
