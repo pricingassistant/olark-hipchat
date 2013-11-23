@@ -26,12 +26,19 @@ class Olark(sleekxmpp.ClientXMPP):
         """
         When a message is received from HipChat, this function is called
         """
-        msg = "{} -> <a href='https://chat.olark.com'>chat.olark.com</a>".format(message['body'])
-        username = str(message['from']).split(".")[0]
+        username = self.get_username(message['from'])
         self.hipchat_client.method('rooms/message', 
             method='POST', 
             parameters={
                 'room_id': self.hipchat_room, 
-                'from': username, 
-                'message': msg,
+                'from': 'Olark', 
+                'message': self.get_message(username, message['body']),
                 'notify': 1})
+
+    def get_username(self, from_):
+        from_ = str(from_)
+        return self.client_roster[from_]['name'] or from_
+
+    def get_message(self, username, body):
+        link = "<a href='https://chat.olark.com'>chat.olark.com</a>"
+        return "{}: {} -> {}".format(username, body, link)

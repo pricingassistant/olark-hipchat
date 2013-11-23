@@ -35,15 +35,15 @@ class TestOlarkClient(unittest.TestCase):
 
         """
         message = {'body': 'body', 'from': 'webuser4.test@test.fr'}
-        msg = "{} -> <a href='https://chat.olark.com'>chat.olark.com</a>".format(message['body'])
-        username = str(message['from']).split(".")[0]
+        username = self.client.get_username(message['from'])
+        msg = self.client.get_message(username, message['body'])
         self.client.visitor_send_message(message)
         self.hipchat_client.method.assert_called_with(
         	'rooms/message', 
         	method='POST', 
         	parameters={
                 'room_id': self.hipchat_room, 
-                'from': username, 
+                'from': 'Olark', 
                 'message': msg,
                 'notify': 1})
 
