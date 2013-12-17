@@ -4,3 +4,5 @@ olark-hipchat.sublime-workspace
 *.pyc
 src/*.pyc
 olark.html
+venv
+.Python

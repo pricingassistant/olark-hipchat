@@ -63,7 +63,13 @@ if __name__ == '__main__':
     # CTRL + C -> quit the application
     def handler(signum, frame):
         client.stop()
-        olark_client.abort()
-        hipchat_client.stop()
+	try:
+        	olark_client.abort()
+	except:
+		pass	        
+	try:
+		hipchat_client.stop()
+	except:
+		pass	        
     signal.signal(signal.SIGINT, handler)
     signal.pause()
