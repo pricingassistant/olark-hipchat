@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import config
 import hipchat
 import logging
 import Queue
 import signal
 import time
+import sys
+import os
 
+sys.path.append(os.path.join(os.path.dirname(__file__)))
+
+import config
 from olarkclient import Olark
 from hipchatclient import HipChat
 from threading import Thread
