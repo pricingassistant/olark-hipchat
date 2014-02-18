@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import hipchat
+
 import logging
 import Queue
 import signal
@@ -70,13 +70,14 @@ if __name__ == '__main__':
     # CTRL + C -> quit the application
     def handler(signum, frame):
         client.stop()
-	try:
-        	olark_client.abort()
-	except:
-		pass
-	try:
-		hipchat_client.stop()
-	except:
-		pass
+
+        try:
+            olark_client.abort()
+        except:
+            pass
+        try:
+            hipchat_client.stop()
+        except:
+            pass
     signal.signal(signal.SIGINT, handler)
     signal.pause()

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import hipchat
+import config
+import datetime
 
 from threading import Thread
 
@@ -13,7 +15,8 @@ class HipChat(hipchat.HipChat):
         self.room_name = room_name
         self.room = None
         self.running = True
-    
+        self.notifications = {}
+
 
     def get_participants(self):
         # get room information
@@ -24,8 +27,8 @@ class HipChat(hipchat.HipChat):
     def get_extended_room_information(self, name):
         room = self.get_room_information(name)
         # return extended room information
-        return self.method('rooms/show', 
-            method='GET', 
+        return self.method('rooms/show',
+            method='GET',
             parameters={'room_id': room.get('room_id')}).get('room')
 
 
@@ -44,14 +47,24 @@ class HipChat(hipchat.HipChat):
 
 
     def send_message(self, username, message):
+
+        notify = 0
+        now = datetime.datetime.now()
+        print self.notifications
+        print (now - self.notifications.get(username)).total_seconds
+        if not self.notifications.get(username) or (now - self.notifications.get(username)).total_seconds > config.HIPCHAT_NOTIFICATIONDELAY:
+            notify = 1
+
+        self.notifications[username] = now
+
         # send message to hipchat
-        self.method('rooms/message', 
-            method='POST', 
+        self.method('rooms/message',
+            method='POST',
             parameters={
-                'room_id': self.room.get('room_id'), 
-                'from': 'Olark', 
+                'room_id': self.room.get('room_id'),
+                'from': 'Olark',
                 'message': self.get_formatted_message(username, message),
-                'notify': 1})
+                'notify': notify})
 
 
     def get_formatted_message(self, username, message):
