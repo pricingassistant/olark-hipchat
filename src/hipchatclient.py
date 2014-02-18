@@ -20,12 +20,18 @@ class HipChat(hipchat.HipChat):
 
     def get_participants(self):
         # get room information
-        room = self.get_extended_room_information(self.room_name)
+        try:
+            room = self.get_extended_room_information(self.room_name)
+        except Exception, e:
+            print "Caught %s" % e
+            return []
         return room.get('participants')
 
 
     def get_extended_room_information(self, name):
+
         room = self.get_room_information(name)
+
         # return extended room information
         return self.method('rooms/show',
             method='GET',
@@ -50,10 +56,10 @@ class HipChat(hipchat.HipChat):
 
         notify = 0
         now = datetime.datetime.now()
-        print self.notifications
-        print (now - self.notifications.get(username)).total_seconds
         if not self.notifications.get(username) or (now - self.notifications.get(username)).total_seconds > config.HIPCHAT_NOTIFICATIONDELAY:
             notify = 1
+        else:
+            print "Username %s already notified" % username
 
         self.notifications[username] = now
 
