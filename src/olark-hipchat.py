@@ -36,16 +36,18 @@ class OlarkHipchat(Thread):
             # get the olark client state
             olark_state = self.olark_client.state.current_state()
 
-            # print "pp", participants, olark_state
+            print "HipChat operators: %s | Olark state: %s" % (participants, olark_state)
 
             # if participants and olark client is not connected
             if participants and olark_state != "connected":
                 # connect it
                 if self.olark_client.connect(("olark.com", 5222)):
+                    print "Connecting to olark..."
                     self.olark_client.process()
 
             # if no participant, disconnect olark client
             elif not participants and olark_state == "connected":
+                print "Disconnecting from olark..."
                 self.olark_client.disconnect()
 
             # wait to check again Hipchat participants
