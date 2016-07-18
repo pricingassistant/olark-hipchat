@@ -1,7 +1,6 @@
 import gevent.monkey
 gevent.monkey.patch_all()
-
-import datetime
+import time
 import logging
 import config  # relative import?
 import signal
@@ -39,7 +38,7 @@ class Application(object):
 
   def __init__(self):
     self.queue = gevent.queue.Queue(maxsize=10)  # maybe Pricing is on tv?
-    self.quota = ExpiringDict(max_length=30, max_age_seconds=config.SLACK_NOTIFICATION_DELAY)
+    self.quota = ExpiringDict(max_length=30, max_age_seconds=config.SLACK_NOTIFICATION_INTERVAL)
 
     self.slack = Slacker(config.SLACK_TOKEN)
     self.olark = OlarkClient(self.queue, config.OLARK_USERNAME, config.OLARK_PASSWORD)  # Will send events
@@ -86,12 +85,16 @@ class Application(object):
     while not self.queue.empty():
       username, message = self.queue.get()
 
-      if username in self.quota:
-        logging.warning("user %s reach the ratelimit (last: %s)" % (username, self.quota.get(username)))
+      last_notify = self.quota.get(username)
+
+      if last_notify:
+        logging.warning("notification already sended for user '%s' over the last %.2f seconds." % (username, time.time() - last_notify))
         continue
 
-      self.slack.chat.post_message(config.SLACK_CHANNEL, "*%s:* %s" % (username, message))
-      self.quota[username] = datetime.datetime.utcnow()
+      message = "*%s:* %s -> %s" % (username, message, config.OLARK_WEBSERVICE_URL)
+
+      self.slack.chat.post_message(config.SLACK_CHANNEL, message, user=config.SLACK_USERNAME)
+      self.quota[username] = time.time()
 
 
 app = Application()
