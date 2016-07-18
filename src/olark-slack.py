@@ -2,7 +2,6 @@ import gevent.monkey
 gevent.monkey.patch_all()
 import time
 import logging
-import config  # relative import?
 import signal
 import gevent
 import gevent.queue
@@ -10,6 +9,8 @@ import gevent.queue
 from expiringdict import ExpiringDict
 from sleekxmpp import ClientXMPP
 from slacker import Slacker
+
+from . import config
 
 
 class OlarkClient(ClientXMPP):
