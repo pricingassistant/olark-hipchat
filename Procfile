@@ -1,1 +1,1 @@
-worker: python src/olark-hipchat.py
+worker: python src/olark-slack.py
