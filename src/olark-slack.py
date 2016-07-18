@@ -1,45 +1,102 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+import gevent.monkey
+gevent.monkey.patch_all()
 
+import datetime
 import logging
-import Queue
+import config  # relative import?
 import signal
-import time
-import sys
-import os
+import gevent
+import gevent.queue
 
-sys.path.append(os.path.join(os.path.dirname(__file__)))
-
-import config
-from olarkclient import Olark
-from threading import Thread
+from expiringdict import ExpiringDict
+from sleekxmpp import ClientXMPP
 from slacker import Slacker
 
-logging.basicConfig(level=logging.ERROR)
+
+class OlarkClient(ClientXMPP):
+
+  def __init__(self, queue, username, password, **kwargs):
+    super(OlarkClient, self).__init__(queue, username, password, **kwargs)
+    self._app_queue = queue
+    self.add_event_handler("session_start", self.operator_is_here)
+    self.add_event_handler("message", self.visitor_send_message)
+
+  def operator_is_here(self, event):
+    """overide an existing method"""
+    self.send_presence()
+    self.get_roster()
+
+  def get_username(self, from_user):
+    from_user = str(from_user)
+    return self.client_roster[from_user].get("name") or from_user
+
+  def visitor_send_message(self, message):
+    username = self.get_username(message["from"])
+    self._app_queue.put((username, message.get("body", "")))
 
 
-class OlarkSlack(Thread):
+class Application(object):
 
-  def __init__(self, sleep_delay, slack_client, olark_client):
-    super(OlarkSlack self).__init__()
-    self.sleep_delay = sleep_delay
-    self.slack_client = slack_client
-    self.olark_client = olark_client
+  def __init__(self):
+    self.queue = gevent.queue.Queue(maxsize=10)  # maybe Pricing is on tv?
+    self.quota = ExpiringDict(max_length=30, max_age_seconds=config.SLACK_NOTIFICATION_DELAY)
 
-    self.running = True
+    self.slack = Slacker(config.SLACK_TOKEN)
+    self.olark = OlarkClient(self.queue, config.OLARK_USERNAME, config.OLARK_PASSWORD)  # Will send events
 
+    self.greenlets = []
+    self.running = False
+
+  def register_signals(self):
+    signal.signal(signal.SIGINT, self.stop)
 
   def run(self):
+    self.greenlets.add(gevent.spawn(self.greenlet_slack_notifier))
+
+    self.register_signals()
+    self.running = True
+
+    olark_connected = False
+
     while self.running:
-      participants = self.slack_client.list(presence=True)
-      olark_state = self.olark_client.state.current_state()
+      channel_members = self.slack.channels.info(config.SLACK_CHANNEL)["members"]
+      connected_chat_users = self.slack.users.list(presence=True)
+      connected_channel_users = list(set(channel_members) & set(connected_chat_users))
 
-      print "Slack operators: %s | Olark state: %s" % (participants, olark_state)
+      if connected_channel_users and not olark_connected:
+        logging.info("Users found on Slack, connect to Olark..")
+        if self.olark.connect(("olark.com", 5222)):
+          self.olark.process()
+          olark_connected = True
 
-      if participants and olark_state != "connected":
-        print "Disconnecting for olark"
+      elif not connected_channel_users and olark_connected:
+        logging.info("No more users on Slack, disconnect from Olark..")
+        self.olark.disconnect()
+        olark_connected = False
+
+    if olark_connected:
+      self.olark.disconnect()
+
+  def stop(self):
+    self.running = False
+    self.olark.stop()
+    gevent.joinall(self.greenlets)
+
+  def greenlet_slack_notifier(self):
+    while not self.queue.empty():
+      username, message = self.queue.get()
+
+      if username in self.quota:
+        logging.warning("user %s reach the ratelimit (last: %s)" % (username, self.quota.get(username)))
+        continue
+
+      self.slack.chat.post_message(config.SLACK_CHANNEL, "*%s:* %s" % (username, message))
+      self.quota[username] = datetime.datetime.utcnow()
+
+
+app = Application()
+
 
 if __name__ == "__main__":
 
-  queue = Queue.Queue(maxsize=0)
-  slack_client = Slacker()
+  app.run()
