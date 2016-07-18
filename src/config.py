@@ -1,10 +1,13 @@
-# -*- coding: utf-8 -*-
 import os
 
-HIPCHAT_TOKEN=os.getenv("HIPCHAT_TOKEN")
-HIPCHAT_ROOMNAME=os.getenv("HIPCHAT_ROOMNAME") or "Olark"
-HIPCHAT_SLEEPDELAY=int(os.getenv("HIPCHAT_SLEEPDELAY") or 10)
-HIPCHAT_NOTIFICATIONDELAY=int(os.getenv("HIPCHAT_NOTIFICATIONDELAY") or 5 * 60)  # Don't notify is last message is less than 5 minutes old
+SLACK_TOKEN = os.getenv("SLACK_URL")
+SLACK_USERNAME = os.getenv("SLACK_USERNAME")
+SLACK_CHANNEL = os.getenv("SLACK_CHANNEL", "#olark")
+SLACK_INTERVAL = int(os.getenv("SLACK_INTERVAL", 60))
+SLACK_NOTIFICATION_DELAY = int(os.getenv("SLACK_NOTIFICATION_DELAY", 360))
 
-OLARK_USERNAME=os.getenv("OLARK_USERNAME")
-OLARK_PASSWORD=os.getenv("OLARK_PASSWORD")
+OLARK_USERNAME = os.getenv("OLARK_USERNAME")
+OLARK_PASSWORD = os.getenv("OLARK_PASSWORD")
+OLARK_XMPP_HOST = os.getenv("OLARK_XMPP_HOST", "olark.com")
+OLARK_XMPP_PORT = int(os.getenv("OLARK_XMPP_PASSWORD", 5222))
+OLARK_WEBSERVICE_URL = os.getenv("OLARK_WEBSERVICE_URL", "https://chat.olark.com")
