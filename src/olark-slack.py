@@ -73,6 +73,8 @@ class Application(object):
         self.olark.disconnect()
         olark_connected = False
 
+      time.sleep(config.SLACK_PRESENCE_INTERVAL)
+
     if olark_connected:
       self.olark.disconnect()
 
