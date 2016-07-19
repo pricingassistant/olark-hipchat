@@ -13,10 +13,14 @@ from slacker import Slacker
 import config
 
 
+class ChannelNotFoundError(Exception):
+  pass
+
+
 class OlarkClient(ClientXMPP):
 
   def __init__(self, queue, username, password, **kwargs):
-    super(OlarkClient, self).__init__(queue, username, password, **kwargs)
+    super(OlarkClient, self).__init__(username, password, **kwargs)
     self._app_queue = queue
     self.add_event_handler("session_start", self.operator_is_here)
     self.add_event_handler("message", self.visitor_send_message)
@@ -28,7 +32,7 @@ class OlarkClient(ClientXMPP):
 
   def get_username(self, from_user):
     from_user = str(from_user)
-    return self.client_roster[from_user].get("name") or from_user
+    return self.client_roster[from_user]["name"] or from_user
 
   def visitor_send_message(self, message):
     username = self.get_username(message["from"])
@@ -42,16 +46,25 @@ class Application(object):
     self.quota = ExpiringDict(max_len=30, max_age_seconds=config.SLACK_NOTIFICATION_INTERVAL)
 
     self.slack = Slacker(config.SLACK_TOKEN)
-    self.olark = OlarkClient(self.queue, config.OLARK_USERNAME, config.OLARK_PASSWORD)  # Will send events
+    self.olark = OlarkClient(self.queue, config.OLARK_USERNAME, config.OLARK_PASSWORD)  # Will send events    
 
     self.greenlets = []
     self.running = False
+    self.channel_id = None
 
   def register_signals(self):
     signal.signal(signal.SIGINT, self.stop)
 
   def run(self):
-    self.greenlets.add(gevent.spawn(self.greenlet_slack_notifier))
+    # get the channel id, using of the name returns a channel_not_found.
+    for channel in self.slack.channels.list().body["channels"]:
+      if channel["name"] == config.SLACK_CHANNEL.strip("#"):
+        self.channel_id = channel["id"]
+
+    if not self.channel_id:
+      raise ChannelNotFoundError("Cannot found channel named %s" % config.SLACK_CHANNEL)
+
+    self.greenlets.append(gevent.spawn(self.greenlet_slack_notifier))
 
     self.register_signals()
     self.running = True
@@ -59,8 +72,8 @@ class Application(object):
     olark_connected = False
 
     while self.running:
-      channel_members = self.slack.channels.info(config.SLACK_CHANNEL)["members"]
-      connected_chat_users = self.slack.users.list(presence=True)
+      channel_members = self.slack.channels.info(self.channel_id).body["channel"]["members"]
+      connected_chat_users = [i["id"] for i in self.slack.users.list(presence=True).body["members"]]
       connected_channel_users = list(set(channel_members) & set(connected_chat_users))
 
       if connected_channel_users and not olark_connected:
@@ -85,7 +98,7 @@ class Application(object):
     gevent.joinall(self.greenlets)
 
   def greenlet_slack_notifier(self):
-    while not self.queue.empty():
+    while True:
       username, message = self.queue.get()
 
       last_notify = self.quota.get(username)
@@ -96,13 +109,14 @@ class Application(object):
 
       message = "*%s:* %s -> %s" % (username, message, config.OLARK_WEBSERVICE_URL)
 
-      self.slack.chat.post_message(config.SLACK_CHANNEL, message, user=config.SLACK_USERNAME)
+      self.slack.chat.post_message(self.channel_id, message, username=config.SLACK_USERNAME)
       self.quota[username] = time.time()
+      time.sleep(1)
 
 
 app = Application()
 
 
 if __name__ == "__main__":
-
+  logging.basicConfig(level=logging.INFO)
   app.run()
