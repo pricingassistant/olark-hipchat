@@ -42,11 +42,11 @@ class OlarkClient(ClientXMPP):
 class Application(object):
 
   def __init__(self):
-    self.queue = gevent.queue.Queue(maxsize=10)  # maybe Pricing is on tv?
+    self.queue = gevent.queue.Queue(maxsize=10)
     self.quota = ExpiringDict(max_len=30, max_age_seconds=config.SLACK_NOTIFICATION_INTERVAL)
 
     self.slack = Slacker(config.SLACK_TOKEN)
-    self.olark = OlarkClient(self.queue, config.OLARK_USERNAME, config.OLARK_PASSWORD)  # Will send events    
+    self.olark = OlarkClient(self.queue, config.OLARK_USERNAME, config.OLARK_PASSWORD)
 
     self.greenlets = []
     self.running = False
@@ -56,7 +56,7 @@ class Application(object):
     signal.signal(signal.SIGINT, self.stop)
 
   def run(self):
-    # get the channel id, using of the name returns a channel_not_found.
+    # get the channel id, usage of name as channel results a channel_not_found.
     for channel in self.slack.channels.list().body["channels"]:
       if channel["name"] == config.SLACK_CHANNEL.strip("#"):
         self.channel_id = channel["id"]
@@ -92,10 +92,10 @@ class Application(object):
     if olark_connected:
       self.olark.disconnect()
 
+    gevent.joinall(self.greenlets)
+
   def stop(self):
     self.running = False
-    self.olark.stop()
-    gevent.joinall(self.greenlets)
 
   def greenlet_slack_notifier(self):
     while True:
@@ -104,7 +104,7 @@ class Application(object):
       last_notify = self.quota.get(username)
 
       if last_notify:
-        logging.warning("notification already sended for user '%s' over the last %.2f seconds." % (username, time.time() - last_notify))
+        logging.warning("notification already sended for user '%s' over the last %.2f seconds" % (username, time.time() - last_notify))
         continue
 
       message = "*%s:* %s -> %s" % (username, message, config.OLARK_WEBSERVICE_URL)
