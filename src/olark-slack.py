@@ -10,7 +10,7 @@ from expiringdict import ExpiringDict
 from sleekxmpp import ClientXMPP
 from slacker import Slacker
 
-from . import config
+import config
 
 
 class OlarkClient(ClientXMPP):
