@@ -39,7 +39,7 @@ class Application(object):
 
   def __init__(self):
     self.queue = gevent.queue.Queue(maxsize=10)  # maybe Pricing is on tv?
-    self.quota = ExpiringDict(max_length=30, max_age_seconds=config.SLACK_NOTIFICATION_INTERVAL)
+    self.quota = ExpiringDict(max_len=30, max_age_seconds=config.SLACK_NOTIFICATION_INTERVAL)
 
     self.slack = Slacker(config.SLACK_TOKEN)
     self.olark = OlarkClient(self.queue, config.OLARK_USERNAME, config.OLARK_PASSWORD)  # Will send events
