@@ -34,9 +34,11 @@ class OlarkClient(ClientXMPP):
     from_user = str(from_user)
     return self.client_roster[from_user]["name"] or from_user
 
-  def visitor_send_message(self, message):
-    username = self.get_username(message["from"])
-    self._app_queue.put((username, message.get("body", "")))
+  def visitor_send_message(self, payload):
+    username = self.get_username(payload["from"])
+    message = payload.get("body", "")
+    logging.debug("Got an incoming message from '%s': '%r'" % (username, message))
+    self._app_queue.put((username, message))
 
 
 class Application(object):
