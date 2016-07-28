@@ -38,7 +38,8 @@ class OlarkClient(ClientXMPP):
     username = self.get_username(payload["from"])
     message = payload.get("body", "")
     logging.debug("Got an incoming message from '%s': '%r'" % (username, message))
-    self._app_queue.put((username, message))
+    if config.OLARK_IGNORE_USERS and username not in config.OLARK_IGNORE_USERS:
+      self._app_queue.put((username, message))
 
 
 class Application(object):
